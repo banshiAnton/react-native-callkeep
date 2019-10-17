@@ -32,11 +32,11 @@ import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.telecom.CallAudioState;
 import android.telecom.Connection;
 import android.telecom.DisconnectCause;
@@ -65,12 +65,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 
-import static android.support.v4.app.ActivityCompat.requestPermissions;
+import static androidx.core.app.ActivityCompat.requestPermissions;
 
 // @see https://github.com/kbagchiGWC/voice-quickstart-android/blob/9a2aff7fbe0d0a5ae9457b48e9ad408740dfb968/exampleConnectionService/src/main/java/com/twilio/voice/examples/connectionservice/VoiceConnectionServiceActivity.java
 public class RNCallKeepModule extends ReactContextBaseJavaModule {
     public static final int REQUEST_READ_PHONE_STATE = 1337;
     public static final int REQUEST_REGISTER_CALL_PROVIDER = 394859;
+
+    public static final String INTENT_EXTRAS_KEY = "notification";
 
     public static final String CHECKING_PERMS = "CHECKING_PERMS";
     public static final String EXTRA_CALLER_NAME = "EXTRA_CALLER_NAME";
@@ -418,12 +420,33 @@ public class RNCallKeepModule extends ReactContextBaseJavaModule {
         Context context = getAppContext();
         String packageName = context.getApplicationContext().getPackageName();
         Intent focusIntent = context.getPackageManager().getLaunchIntentForPackage(packageName).cloneFilter();
-
         focusIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-
         Activity activity = getCurrentActivity();
         activity.startActivity(focusIntent);
     }
+
+    @ReactMethod
+    public void launchApp(ReadableMap notificationData) {
+        Context context = getAppContext();
+        Intent launchIntent = new Intent(context, getMainActivityClass(context));
+        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Bundle launchIntentDateBundle = Arguments.toBundle(notificationData);
+        launchIntent.putExtra(INTENT_EXTRAS_KEY, launchIntentDateBundle);
+        context.startActivity(launchIntent);
+    }
+
+    public Class getMainActivityClass(Context context) {
+        String packageName = context.getPackageName();
+        Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(packageName);
+        String className = launchIntent.getComponent().getClassName();
+        try {
+            return Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 
     private void registerPhoneAccount(Context appContext) {
         if (!isConnectionServiceAvailable()) {

@@ -214,7 +214,14 @@ class RNCallKeep {
       return;
     }
 
-    NativeModules.RNCallKeep.backToForeground();
+    RNCallKeepModule.backToForeground();
+  }
+
+  launchApp(notificationBundle) {
+    if (isIOS) {
+      return;
+    }
+    RNCallKeepModule.launchApp(notificationBundle);
   }
 
 }
