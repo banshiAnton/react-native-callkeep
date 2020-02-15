@@ -334,10 +334,10 @@ RCT_EXPORT_METHOD(sendDTMF:(NSString *)uuidString dtmf:(NSString *)key)
     NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:uuidString];
     CXCallUpdate *callUpdate = [[CXCallUpdate alloc] init];
     callUpdate.remoteHandle = [[CXHandle alloc] initWithType:_handleType value:handle];
-    callUpdate.supportsDTMF = YES;
-    callUpdate.supportsHolding = YES;
-    callUpdate.supportsGrouping = YES;
-    callUpdate.supportsUngrouping = YES;
+    callUpdate.supportsDTMF = NO;
+    callUpdate.supportsHolding = NO;
+    callUpdate.supportsGrouping = NO;
+    callUpdate.supportsUngrouping = NO;
     callUpdate.hasVideo = hasVideo;
     callUpdate.localizedCallerName = localizedCallerName;
 
@@ -459,54 +459,15 @@ continueUserActivity:(NSUserActivity *)userActivity
     NSLog(@"[RNCallKeep][application:continueUserActivity]");
 #endif
     INInteraction *interaction = userActivity.interaction;
-    INPerson *contact;
-    NSString *handle;
-    BOOL isAudioCall;
-    BOOL isVideoCall;
+    BOOL isVideoCall = [userActivity.activityType isEqualToString:INStartVideoCallIntentIdentifier];
 
-//HACK TO AVOID XCODE 10 COMPILE CRASH
-//REMOVE ON NEXT MAJOR RELEASE OF RNCALLKIT
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
-    //XCode 11
-    // iOS 13 returns an INStartCallIntent userActivity type
-    if (@available(iOS 13, *)) {
-        INStartCallIntent *intent = (INStartCallIntent*)interaction.intent;
-        isAudioCall = intent.callCapability == INCallCapabilityAudioCall;
-        isVideoCall = intent.callCapability == INCallCapabilityVideoCall;
-    } else {
-#endif
-        //XCode 10 and below
-        isAudioCall = [userActivity.activityType isEqualToString:INStartAudioCallIntentIdentifier];
-        isVideoCall = [userActivity.activityType isEqualToString:INStartVideoCallIntentIdentifier];
-//HACK TO AVOID XCODE 10 COMPILE CRASH
-//REMOVE ON NEXT MAJOR RELEASE OF RNCALLKIT
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
-    }
-#endif
+    NSDictionary *userInfo = @{
+        @"video": @(isVideoCall)
+    };
 
-    if (isAudioCall) {
-        INStartAudioCallIntent *startAudioCallIntent = (INStartAudioCallIntent *)interaction.intent;
-        contact = [startAudioCallIntent.contacts firstObject];
-    } else if (isVideoCall) {
-        INStartVideoCallIntent *startVideoCallIntent = (INStartVideoCallIntent *)interaction.intent;
-        contact = [startVideoCallIntent.contacts firstObject];
-    }
-
-    if (contact != nil) {
-        handle = contact.personHandle.value;
-    }
-
-    if (handle != nil && handle.length > 0 ){
-        NSDictionary *userInfo = @{
-            @"handle": handle,
-            @"video": @(isVideoCall)
-        };
-
-        RNCallKeep *callKeep = [RNCallKeep allocWithZone: nil];
-        [callKeep handleStartCallNotification: userInfo];
-        return YES;
-    }
-    return NO;
+    RNCallKeep *callKeep = [RNCallKeep allocWithZone: nil];
+    [callKeep handleStartCallNotification: userInfo];
+    return YES;
 }
 
 + (BOOL)requiresMainQueueSetup
