@@ -32,5 +32,9 @@ continueUserActivity:(NSUserActivity *)userActivity
                    handleType:(NSString *)handleType
                      hasVideo:(BOOL)hasVideo
           localizedCallerName:(NSString * _Nullable)localizedCallerName
-                  fromPushKit:(BOOL)fromPushKit;
+                  fromPushKit:(BOOL)fromPushKit
+                afterShowComplete: (void(^)(void)) afterShowComplete;
+
+- (void)setupCallKeep:(NSDictionary *)options;
+
 @end

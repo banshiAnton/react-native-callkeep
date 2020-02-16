@@ -108,6 +108,14 @@ RCT_EXPORT_METHOD(setup:(NSDictionary *)options)
 #ifdef DEBUG
     NSLog(@"[RNCallKeep][setup] options = %@", options);
 #endif
+    [self setupCallKeep:options];
+}
+
+- (void)setupCallKeep:(NSDictionary *)options
+{
+#ifdef DEBUG
+    NSLog(@"[RNCallKeep][setup] options = %@", options);
+#endif
     _version = [[[NSProcessInfo alloc] init] operatingSystemVersion];
     self.callKeepCallController = [[CXCallController alloc] init];
     NSDictionary *settings = [[NSMutableDictionary alloc] initWithDictionary:options];
@@ -151,7 +159,9 @@ RCT_EXPORT_METHOD(displayIncomingCall:(NSString *)uuidString
                              hasVideo:(BOOL)hasVideo
                   localizedCallerName:(NSString * _Nullable)localizedCallerName)
 {
-    [RNCallKeep reportNewIncomingCall: uuidString handle:handle handleType:handleType hasVideo:hasVideo localizedCallerName:localizedCallerName fromPushKit: NO];
+    [RNCallKeep reportNewIncomingCall: uuidString handle:handle handleType:handleType hasVideo:hasVideo localizedCallerName:localizedCallerName fromPushKit: NO afterShowComplete:^{
+        NSLog(@"displayIncomingCall");
+    }];
 }
 
 RCT_EXPORT_METHOD(startCall:(NSString *)uuidString
@@ -310,10 +320,10 @@ RCT_EXPORT_METHOD(sendDTMF:(NSString *)uuidString dtmf:(NSString *)key)
                 callUpdate.remoteHandle = startCallAction.handle;
                 callUpdate.hasVideo = startCallAction.video;
                 callUpdate.localizedCallerName = startCallAction.contactIdentifier;
-                callUpdate.supportsDTMF = YES;
-                callUpdate.supportsHolding = YES;
-                callUpdate.supportsGrouping = YES;
-                callUpdate.supportsUngrouping = YES;
+                callUpdate.supportsDTMF = NO;
+                callUpdate.supportsHolding = NO;
+                callUpdate.supportsGrouping = NO;
+                callUpdate.supportsUngrouping = NO;
                 [self.callKeepProvider reportCallWithUUID:startCallAction.callUUID updated:callUpdate];
             }
         }
@@ -326,6 +336,7 @@ RCT_EXPORT_METHOD(sendDTMF:(NSString *)uuidString dtmf:(NSString *)key)
                      hasVideo:(BOOL)hasVideo
           localizedCallerName:(NSString * _Nullable)localizedCallerName
                   fromPushKit:(BOOL)fromPushKit
+            afterShowComplete: (void(^)(void)) afterShowComplete
 {
 #ifdef DEBUG
     NSLog(@"[RNCallKeep][reportNewIncomingCall] uuidString = %@", uuidString);
@@ -343,6 +354,7 @@ RCT_EXPORT_METHOD(sendDTMF:(NSString *)uuidString dtmf:(NSString *)key)
 
     [RNCallKeep initCallKitProvider];
     [sharedProvider reportNewIncomingCallWithUUID:uuid update:callUpdate completion:^(NSError * _Nullable error) {
+        afterShowComplete();
         RNCallKeep *callKeep = [RNCallKeep allocWithZone: nil];
         [callKeep sendEventWithName:RNCallKeepDidDisplayIncomingCall body:@{ @"error": error ? error.localizedDescription : @"", @"callUUID": uuidString, @"handle": handle, @"localizedCallerName": localizedCallerName, @"fromPushKit": fromPushKit ? @"1" : @"0" }];
         if (error == nil) {
