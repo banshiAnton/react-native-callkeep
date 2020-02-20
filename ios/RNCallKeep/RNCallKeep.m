@@ -561,7 +561,7 @@ RCT_EXPORT_METHOD(reportUpdatedCall:(NSString *)uuidString contactIdentifier:(NS
     NSLog(@"[RNCallKeep][CXProviderDelegate][provider:performEndCallAction]");
 #endif
     [self sendEventWithName:RNCallKeepPerformEndCallAction body:@{ @"callUUID": [action.callUUID.UUIDString lowercaseString] }];
-    [action fulfill];
+    //[action fulfill];
 }
 
 -(void)provider:(CXProvider *)provider performSetHeldCallAction:(CXSetHeldCallAction *)action
